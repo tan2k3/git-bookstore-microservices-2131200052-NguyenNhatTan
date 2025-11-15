@@ -27,17 +27,20 @@ app.post('/', async (req, res) => {
     const { productId, quantity } = req.body;
 
     // Validate input
-    if (!productId || !quantity || quantity <= 0) {
+    if (!productId || typeof quantity !== 'number' || quantity <= 0) {
       return res.status(400).json({ error: 'productId and positive quantity required' });
     }
 
     // Verify product exists (via product service)
     let product;
     try {
-      const r = await axios.get(`${process.env.PRODUCT_SERVICE_URL}/products/${productId}`, {
+      const r = await axios.get(`${process.env.PRODUCT_SERVICE_URL}/${productId}`, {
         timeout: 2000
       });
       product = r.data;
+      if (!product.stock || product.stock < quantity) {
+        return res.status(400).json({ error: 'Insufficient stock' });
+      }
     } catch (err) {
       console.error('Product validation failed:', err.message);
       return res.status(400).json({ error: 'Invalid productId or product service unavailable' });
